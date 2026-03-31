@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-openapi:
+    name: Validate OpenAPI Specs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pyyaml openapi-spec-validator
+
+      - name: Validate platform.yaml
+        run: python -m openapi_spec_validator spec/openapi/platform.yaml
+
+      - name: Validate runtime.yaml
+        run: python -m openapi_spec_validator spec/openapi/runtime.yaml
+
+      - name: Validate cross-cutting.yaml
+        run: python -m openapi_spec_validator spec/openapi/cross-cutting.yaml
+
+  validate-python:
+    name: Validate Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pydantic mypy ruff
+
+      - name: Lint with ruff
+        run: ruff check spec/
+
+      - name: Type check with mypy
+        run: mypy spec/ --ignore-missing-imports
+
+  yaml-lint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint YAML files
+        run: yamllint -d relaxed spec/openapi/

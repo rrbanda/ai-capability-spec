@@ -1,0 +1,669 @@
+openapi: 3.1.0
+info:
+  title: Unified AI Capability Spec - Cross-Cutting Layer
+  version: 0.1.0
+  description: |
+    Vendor-neutral API surface for cross-cutting capabilities (16-18) that
+    span both the platform and runtime layers: model registry, provider
+    management, and tool runtime.
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: "{baseUrl}"
+    description: Provider-supplied base URL
+    variables:
+      baseUrl:
+        default: http://localhost:8080
+
+tags:
+  - name: registry
+    description: "Capability 16: Model Registry"
+  - name: providers
+    description: "Capability 17: Provider Management"
+  - name: tools
+    description: "Capability 18: Tool Runtime"
+
+paths:
+  # ---------------------------------------------------------------------------
+  # Capability 16: Model Registry
+  # ---------------------------------------------------------------------------
+  /capabilities/registry/models:
+    get:
+      operationId: list_models
+      tags: [registry]
+      summary: List registered models
+      parameters:
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Model list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisteredModelList"
+    post:
+      operationId: register_model
+      tags: [registry]
+      summary: Register a model
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterModelRequest"
+      responses:
+        "201":
+          description: Model registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisteredModel"
+
+  /capabilities/registry/models/{model_id}:
+    parameters:
+      - $ref: "#/components/parameters/ModelId"
+    get:
+      operationId: get_model
+      tags: [registry]
+      summary: Retrieve model details
+      responses:
+        "200":
+          description: Model details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisteredModel"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /capabilities/registry/models/{model_id}/versions:
+    parameters:
+      - $ref: "#/components/parameters/ModelId"
+    get:
+      operationId: list_model_versions
+      tags: [registry]
+      summary: List versions of a model
+      responses:
+        "200":
+          description: Version list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelVersionList"
+    post:
+      operationId: create_model_version
+      tags: [registry]
+      summary: Create a new version of a model
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateModelVersionRequest"
+      responses:
+        "201":
+          description: Version created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelVersion"
+
+  /capabilities/registry/models/search:
+    post:
+      operationId: search_models
+      tags: [registry]
+      summary: Search models by criteria
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchModelsRequest"
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisteredModelList"
+
+  # ---------------------------------------------------------------------------
+  # Capability 17: Provider Management
+  # ---------------------------------------------------------------------------
+  /capabilities/providers:
+    get:
+      operationId: list_providers
+      tags: [providers]
+      summary: List registered providers
+      responses:
+        "200":
+          description: Provider list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderList"
+
+  /capabilities/providers/{provider_id}:
+    parameters:
+      - $ref: "#/components/parameters/ProviderId"
+    get:
+      operationId: get_provider
+      tags: [providers]
+      summary: Retrieve provider details
+      responses:
+        "200":
+          description: Provider details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderManifest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /capabilities/providers/{provider_id}/health:
+    parameters:
+      - $ref: "#/components/parameters/ProviderId"
+    get:
+      operationId: health_check
+      tags: [providers]
+      summary: Check provider health
+      responses:
+        "200":
+          description: Health status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /capabilities/providers/{provider_id}/capabilities:
+    parameters:
+      - $ref: "#/components/parameters/ProviderId"
+    get:
+      operationId: get_provider_capabilities
+      tags: [providers]
+      summary: List capabilities a provider supports
+      responses:
+        "200":
+          description: Capability list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapabilityList"
+
+  # ---------------------------------------------------------------------------
+  # Capability 18: Tool Runtime
+  # ---------------------------------------------------------------------------
+  /capabilities/tools:
+    get:
+      operationId: list_tools
+      tags: [tools]
+      summary: List available tools
+      parameters:
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Tool list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolList"
+    post:
+      operationId: register_tool
+      tags: [tools]
+      summary: Register a tool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterToolRequest"
+      responses:
+        "201":
+          description: Tool registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tool"
+
+  /capabilities/tools/{tool_id}:
+    parameters:
+      - $ref: "#/components/parameters/ToolId"
+    get:
+      operationId: get_tool
+      tags: [tools]
+      summary: Retrieve tool details
+      responses:
+        "200":
+          description: Tool details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tool"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /capabilities/tools/{tool_id}/invoke:
+    parameters:
+      - $ref: "#/components/parameters/ToolId"
+    post:
+      operationId: invoke_tool
+      tags: [tools]
+      summary: Execute a tool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvokeToolRequest"
+      responses:
+        "200":
+          description: Tool execution result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolResult"
+
+  /capabilities/tool-groups:
+    get:
+      operationId: list_tool_groups
+      tags: [tools]
+      summary: List tool groups
+      responses:
+        "200":
+          description: Tool group list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolGroupList"
+    post:
+      operationId: register_tool_group
+      tags: [tools]
+      summary: Register a group of related tools
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterToolGroupRequest"
+      responses:
+        "201":
+          description: Tool group registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolGroup"
+
+# =============================================================================
+# Components
+# =============================================================================
+components:
+  parameters:
+    ModelId:
+      name: model_id
+      in: path
+      required: true
+      schema:
+        type: string
+    ProviderId:
+      name: provider_id
+      in: path
+      required: true
+      schema:
+        type: string
+    ToolId:
+      name: tool_id
+      in: path
+      required: true
+      schema:
+        type: string
+    PageToken:
+      name: page_token
+      in: query
+      schema:
+        type: string
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 100
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+    Pagination:
+      type: object
+      properties:
+        next_page_token:
+          type: string
+        total_count:
+          type: integer
+
+    # -- Capability 16: Model Registry -----------------------------------------
+    RegisteredModel:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        owner:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        custom_properties:
+          type: object
+          additionalProperties:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RegisterModelRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        owner:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        custom_properties:
+          type: object
+          additionalProperties:
+            type: string
+
+    RegisteredModelList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegisteredModel"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    ModelVersion:
+      type: object
+      required: [id, version]
+      properties:
+        id:
+          type: string
+        version:
+          type: string
+        model_id:
+          type: string
+        artifact_uri:
+          type: string
+        state:
+          type: string
+          enum: [live, staged, archived]
+        description:
+          type: string
+        custom_properties:
+          type: object
+          additionalProperties:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+
+    CreateModelVersionRequest:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: string
+        artifact_uri:
+          type: string
+        state:
+          type: string
+          enum: [live, staged, archived]
+          default: staged
+        description:
+          type: string
+        custom_properties:
+          type: object
+          additionalProperties:
+            type: string
+
+    ModelVersionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelVersion"
+
+    SearchModelsRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        owner:
+          type: string
+        page_token:
+          type: string
+        page_size:
+          type: integer
+
+    # -- Capability 17: Provider Management ------------------------------------
+    ProviderManifest:
+      type: object
+      required: [id, name, capabilities]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+            enum:
+              - workspaces
+              - notebooks
+              - deployments
+              - training
+              - pipelines
+              - storage
+              - cluster_resources
+              - inference
+              - agents
+              - safety
+              - knowledge
+              - evaluation
+              - datasets
+              - prompts
+              - files
+              - model_registry
+              - provider_management
+              - tool_runtime
+        config:
+          type: object
+
+    ProviderList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProviderManifest"
+
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        message:
+          type: string
+        checked_at:
+          type: string
+          format: date-time
+
+    CapabilityList:
+      type: object
+      required: [capabilities]
+      properties:
+        capabilities:
+          type: array
+          items:
+            type: object
+            required: [name, supported]
+            properties:
+              name:
+                type: string
+              supported:
+                type: boolean
+              operations:
+                type: array
+                items:
+                  type: string
+
+    # -- Capability 18: Tool Runtime -------------------------------------------
+    Tool:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        parameters_schema:
+          type: object
+          description: JSON Schema defining the tool's input parameters
+        group_id:
+          type: string
+
+    RegisterToolRequest:
+      type: object
+      required: [name, description, parameters_schema]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        parameters_schema:
+          type: object
+        group_id:
+          type: string
+
+    ToolList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tool"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    InvokeToolRequest:
+      type: object
+      required: [arguments]
+      properties:
+        arguments:
+          type: object
+          description: Tool-specific arguments matching parameters_schema
+
+    ToolResult:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+        output:
+          description: Tool-specific output
+        error:
+          type: string
+
+    ToolGroup:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        tools:
+          type: array
+          items:
+            type: string
+          description: Tool IDs in this group
+
+    RegisterToolGroupRequest:
+      type: object
+      required: [name, tools]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        tools:
+          type: array
+          items:
+            type: string
+
+    ToolGroupList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolGroup"

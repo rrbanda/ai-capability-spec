@@ -1,0 +1,1433 @@
+openapi: 3.1.0
+info:
+  title: Unified AI Capability Spec - Platform Layer
+  version: 0.1.0
+  description: |
+    Vendor-neutral API surface for AI platform infrastructure capabilities
+    (1-7). These paths are the spec's own neutral interface -- providers
+    translate to/from their native APIs internally.
+
+    This spec does NOT prescribe any vendor's HTTP paths or payload formats.
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: "{baseUrl}"
+    description: Provider-supplied base URL
+    variables:
+      baseUrl:
+        default: http://localhost:8080
+
+tags:
+  - name: workspaces
+    description: "Capability 1: Workspace Management"
+  - name: notebooks
+    description: "Capability 2: Interactive Development"
+  - name: deployments
+    description: "Capability 3: Model Deployment"
+  - name: training
+    description: "Capability 4: Model Training"
+  - name: pipelines
+    description: "Capability 5: Pipeline Orchestration"
+  - name: storage
+    description: "Capability 6: Persistent Storage"
+  - name: cluster
+    description: "Capability 7: Cluster Resources"
+
+paths:
+  # ---------------------------------------------------------------------------
+  # Capability 1: Workspace Management
+  # ---------------------------------------------------------------------------
+  /capabilities/workspaces:
+    get:
+      operationId: list_workspaces
+      tags: [workspaces]
+      summary: List all accessible workspaces
+      parameters:
+        - $ref: "#/components/parameters/LabelFilter"
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Workspace list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceList"
+    post:
+      operationId: create_workspace
+      tags: [workspaces]
+      summary: Create a new workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkspaceRequest"
+      responses:
+        "201":
+          description: Workspace created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workspace"
+
+  /capabilities/workspaces/{workspace_id}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+    get:
+      operationId: get_workspace
+      tags: [workspaces]
+      summary: Retrieve workspace details
+      responses:
+        "200":
+          description: Workspace details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workspace"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: update_workspace
+      tags: [workspaces]
+      summary: Modify workspace metadata or quotas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWorkspaceRequest"
+      responses:
+        "200":
+          description: Workspace updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workspace"
+    delete:
+      operationId: delete_workspace
+      tags: [workspaces]
+      summary: Remove a workspace and its resources
+      responses:
+        "204":
+          description: Workspace deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------------------------------------------------------------------
+  # Capability 2: Interactive Development (Notebooks)
+  # ---------------------------------------------------------------------------
+  /capabilities/workspaces/{workspace_id}/notebooks:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+    get:
+      operationId: list_notebooks
+      tags: [notebooks]
+      summary: List notebooks in a workspace
+      parameters:
+        - $ref: "#/components/parameters/LabelFilter"
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Notebook list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotebookList"
+    post:
+      operationId: create_notebook
+      tags: [notebooks]
+      summary: Launch a notebook instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNotebookRequest"
+      responses:
+        "201":
+          description: Notebook created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notebook"
+
+  /capabilities/workspaces/{workspace_id}/notebooks/{notebook_id}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/NotebookId"
+    get:
+      operationId: get_notebook
+      tags: [notebooks]
+      summary: Retrieve notebook details
+      responses:
+        "200":
+          description: Notebook details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notebook"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: delete_notebook
+      tags: [notebooks]
+      summary: Remove a notebook instance
+      responses:
+        "204":
+          description: Notebook deleted
+
+  /capabilities/workspaces/{workspace_id}/notebooks/{notebook_id}/start:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/NotebookId"
+    post:
+      operationId: start_notebook
+      tags: [notebooks]
+      summary: Start a stopped notebook
+      responses:
+        "200":
+          description: Notebook started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notebook"
+
+  /capabilities/workspaces/{workspace_id}/notebooks/{notebook_id}/stop:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/NotebookId"
+    post:
+      operationId: stop_notebook
+      tags: [notebooks]
+      summary: Stop a running notebook
+      responses:
+        "200":
+          description: Notebook stopped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notebook"
+
+  # ---------------------------------------------------------------------------
+  # Capability 3: Model Deployment
+  # ---------------------------------------------------------------------------
+  /capabilities/workspaces/{workspace_id}/deployments:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+    get:
+      operationId: list_deployments
+      tags: [deployments]
+      summary: List deployments in a workspace
+      parameters:
+        - $ref: "#/components/parameters/LabelFilter"
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Deployment list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeploymentList"
+    post:
+      operationId: create_deployment
+      tags: [deployments]
+      summary: Deploy a model to an endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDeploymentRequest"
+      responses:
+        "201":
+          description: Deployment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deployment"
+
+  /capabilities/workspaces/{workspace_id}/deployments/{deployment_id}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/DeploymentId"
+    get:
+      operationId: get_deployment
+      tags: [deployments]
+      summary: Retrieve deployment details
+      responses:
+        "200":
+          description: Deployment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deployment"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: update_deployment
+      tags: [deployments]
+      summary: Modify deployment config
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDeploymentRequest"
+      responses:
+        "200":
+          description: Deployment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deployment"
+    delete:
+      operationId: delete_deployment
+      tags: [deployments]
+      summary: Remove a deployment
+      responses:
+        "204":
+          description: Deployment deleted
+
+  /capabilities/workspaces/{workspace_id}/deployments/{deployment_id}/status:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/DeploymentId"
+    get:
+      operationId: get_deployment_status
+      tags: [deployments]
+      summary: Check readiness and health
+      responses:
+        "200":
+          description: Deployment status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeploymentStatus"
+
+  # ---------------------------------------------------------------------------
+  # Capability 4: Model Training
+  # ---------------------------------------------------------------------------
+  /capabilities/workspaces/{workspace_id}/training/jobs:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+    get:
+      operationId: list_training_jobs
+      tags: [training]
+      summary: List training jobs
+      parameters:
+        - $ref: "#/components/parameters/LabelFilter"
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Training job list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingJobList"
+    post:
+      operationId: create_training_job
+      tags: [training]
+      summary: Submit a training job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTrainingJobRequest"
+      responses:
+        "201":
+          description: Training job created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingJob"
+
+  /capabilities/workspaces/{workspace_id}/training/jobs/{job_id}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/JobId"
+    get:
+      operationId: get_training_job
+      tags: [training]
+      summary: Retrieve job details
+      responses:
+        "200":
+          description: Training job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingJob"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: delete_training_job
+      tags: [training]
+      summary: Remove a completed or failed job
+      responses:
+        "204":
+          description: Training job deleted
+
+  /capabilities/workspaces/{workspace_id}/training/jobs/{job_id}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/JobId"
+    post:
+      operationId: cancel_training_job
+      tags: [training]
+      summary: Cancel a running job
+      responses:
+        "200":
+          description: Training job cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingJob"
+
+  /capabilities/workspaces/{workspace_id}/training/jobs/{job_id}/logs:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/JobId"
+    get:
+      operationId: get_training_logs
+      tags: [training]
+      summary: Fetch job logs
+      parameters:
+        - name: container
+          in: query
+          schema:
+            type: string
+        - name: tail_lines
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Log content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogStream"
+
+  /capabilities/training/runtimes:
+    get:
+      operationId: list_training_runtimes
+      tags: [training]
+      summary: List available training runtimes
+      parameters:
+        - $ref: "#/components/parameters/LabelFilter"
+      responses:
+        "200":
+          description: Training runtime list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingRuntimeList"
+
+  # ---------------------------------------------------------------------------
+  # Capability 5: Pipeline Orchestration
+  # ---------------------------------------------------------------------------
+  /capabilities/workspaces/{workspace_id}/pipelines:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+    get:
+      operationId: list_pipeline_servers
+      tags: [pipelines]
+      summary: List pipeline servers
+      responses:
+        "200":
+          description: Pipeline server list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineServerList"
+    post:
+      operationId: create_pipeline_server
+      tags: [pipelines]
+      summary: Deploy pipeline infrastructure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePipelineServerRequest"
+      responses:
+        "201":
+          description: Pipeline server created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineServer"
+
+  /capabilities/workspaces/{workspace_id}/pipelines/{server_id}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ServerId"
+    get:
+      operationId: get_pipeline_server
+      tags: [pipelines]
+      summary: Retrieve pipeline server details
+      responses:
+        "200":
+          description: Pipeline server details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineServer"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: delete_pipeline_server
+      tags: [pipelines]
+      summary: Remove pipeline infrastructure
+      responses:
+        "204":
+          description: Pipeline server deleted
+
+  /capabilities/workspaces/{workspace_id}/pipelines/{server_id}/status:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ServerId"
+    get:
+      operationId: get_pipeline_server_status
+      tags: [pipelines]
+      summary: Check server readiness
+      responses:
+        "200":
+          description: Pipeline server status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineServerStatus"
+
+  # ---------------------------------------------------------------------------
+  # Capability 6: Persistent Storage
+  # ---------------------------------------------------------------------------
+  /capabilities/workspaces/{workspace_id}/storage:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+    get:
+      operationId: list_storage
+      tags: [storage]
+      summary: List storage volumes
+      parameters:
+        - $ref: "#/components/parameters/LabelFilter"
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Storage volume list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageVolumeList"
+    post:
+      operationId: create_storage
+      tags: [storage]
+      summary: Create a persistent storage volume
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStorageRequest"
+      responses:
+        "201":
+          description: Storage volume created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageVolume"
+
+  /capabilities/workspaces/{workspace_id}/storage/{storage_id}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/StorageId"
+    get:
+      operationId: get_storage
+      tags: [storage]
+      summary: Retrieve storage details
+      responses:
+        "200":
+          description: Storage volume details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageVolume"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: delete_storage
+      tags: [storage]
+      summary: Remove a storage volume
+      responses:
+        "204":
+          description: Storage volume deleted
+
+  /capabilities/workspaces/{workspace_id}/connections:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+    get:
+      operationId: list_connections
+      tags: [storage]
+      summary: List data connections
+      parameters:
+        - $ref: "#/components/parameters/LabelFilter"
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Connection list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionList"
+    post:
+      operationId: create_connection
+      tags: [storage]
+      summary: Create a data connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConnectionRequest"
+      responses:
+        "201":
+          description: Connection created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+
+  /capabilities/workspaces/{workspace_id}/connections/{connection_id}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ConnectionId"
+    get:
+      operationId: get_connection
+      tags: [storage]
+      summary: Retrieve connection details
+      responses:
+        "200":
+          description: Connection details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: delete_connection
+      tags: [storage]
+      summary: Remove a connection
+      responses:
+        "204":
+          description: Connection deleted
+
+  # ---------------------------------------------------------------------------
+  # Capability 7: Cluster Resources
+  # ---------------------------------------------------------------------------
+  /capabilities/cluster/nodes:
+    get:
+      operationId: list_compute_nodes
+      tags: [cluster]
+      summary: List available compute nodes
+      parameters:
+        - $ref: "#/components/parameters/LabelFilter"
+      responses:
+        "200":
+          description: Compute node list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComputeNodeList"
+
+  /capabilities/cluster/summary:
+    get:
+      operationId: get_cluster_summary
+      tags: [cluster]
+      summary: Aggregate capacity summary
+      responses:
+        "200":
+          description: Cluster summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClusterSummary"
+
+  /capabilities/cluster/accelerators:
+    get:
+      operationId: list_accelerator_profiles
+      tags: [cluster]
+      summary: List GPU/accelerator types
+      responses:
+        "200":
+          description: Accelerator profiles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceleratorProfileList"
+
+  /capabilities/cluster/storage-classes:
+    get:
+      operationId: list_storage_classes
+      tags: [cluster]
+      summary: List available storage classes
+      responses:
+        "200":
+          description: Storage class list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageClassList"
+
+# =============================================================================
+# Components
+# =============================================================================
+components:
+  # ---------------------------------------------------------------------------
+  # Parameters
+  # ---------------------------------------------------------------------------
+  parameters:
+    WorkspaceId:
+      name: workspace_id
+      in: path
+      required: true
+      schema:
+        type: string
+    NotebookId:
+      name: notebook_id
+      in: path
+      required: true
+      schema:
+        type: string
+    DeploymentId:
+      name: deployment_id
+      in: path
+      required: true
+      schema:
+        type: string
+    JobId:
+      name: job_id
+      in: path
+      required: true
+      schema:
+        type: string
+    ServerId:
+      name: server_id
+      in: path
+      required: true
+      schema:
+        type: string
+    StorageId:
+      name: storage_id
+      in: path
+      required: true
+      schema:
+        type: string
+    ConnectionId:
+      name: connection_id
+      in: path
+      required: true
+      schema:
+        type: string
+    LabelFilter:
+      name: labels
+      in: query
+      description: Key-value label filter (comma-separated key=value pairs)
+      schema:
+        type: string
+    PageToken:
+      name: page_token
+      in: query
+      description: Continuation token for pagination
+      schema:
+        type: string
+    PageSize:
+      name: page_size
+      in: query
+      description: Maximum number of results to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 100
+
+  # ---------------------------------------------------------------------------
+  # Responses
+  # ---------------------------------------------------------------------------
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  # ---------------------------------------------------------------------------
+  # Schemas
+  # ---------------------------------------------------------------------------
+  schemas:
+    # -- Common ----------------------------------------------------------------
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+    ResourceMetadata:
+      type: object
+      required: [id, name, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        annotations:
+          type: object
+          additionalProperties:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ResourceRequirements:
+      type: object
+      properties:
+        cpu:
+          type: string
+          description: "CPU request (e.g. '2', '500m')"
+        memory:
+          type: string
+          description: "Memory request (e.g. '4Gi')"
+        gpu:
+          type: integer
+          description: Number of GPUs
+        gpu_type:
+          type: string
+          description: "GPU accelerator type (e.g. 'nvidia-a100')"
+
+    Pagination:
+      type: object
+      properties:
+        next_page_token:
+          type: string
+        total_count:
+          type: integer
+
+    # -- Capability 1: Workspaces ----------------------------------------------
+    Workspace:
+      type: object
+      required: [metadata, status]
+      properties:
+        metadata:
+          $ref: "#/components/schemas/ResourceMetadata"
+        description:
+          type: string
+        resource_quotas:
+          $ref: "#/components/schemas/ResourceRequirements"
+        status:
+          type: string
+          enum: [active, terminating, pending]
+
+    CreateWorkspaceRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        resource_quotas:
+          $ref: "#/components/schemas/ResourceRequirements"
+
+    UpdateWorkspaceRequest:
+      type: object
+      properties:
+        description:
+          type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        resource_quotas:
+          $ref: "#/components/schemas/ResourceRequirements"
+
+    WorkspaceList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Workspace"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # -- Capability 2: Notebooks -----------------------------------------------
+    Notebook:
+      type: object
+      required: [metadata, status]
+      properties:
+        metadata:
+          $ref: "#/components/schemas/ResourceMetadata"
+        image:
+          type: string
+        resources:
+          $ref: "#/components/schemas/ResourceRequirements"
+        storage_volumes:
+          type: array
+          items:
+            type: string
+            description: Storage volume IDs to mount
+        status:
+          type: string
+          enum: [starting, running, stopping, stopped, failed]
+        url:
+          type: string
+          format: uri
+          description: Access URL when running
+
+    CreateNotebookRequest:
+      type: object
+      required: [name, image]
+      properties:
+        name:
+          type: string
+        image:
+          type: string
+        resources:
+          $ref: "#/components/schemas/ResourceRequirements"
+        storage_volumes:
+          type: array
+          items:
+            type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        environment_variables:
+          type: object
+          additionalProperties:
+            type: string
+
+    NotebookList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notebook"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # -- Capability 3: Deployments ---------------------------------------------
+    Deployment:
+      type: object
+      required: [metadata, model_uri, status]
+      properties:
+        metadata:
+          $ref: "#/components/schemas/ResourceMetadata"
+        model_uri:
+          type: string
+          description: URI to the model artifact
+        runtime:
+          type: string
+          description: Serving runtime identifier
+        resources:
+          $ref: "#/components/schemas/ResourceRequirements"
+        replicas:
+          type: integer
+          minimum: 0
+        min_replicas:
+          type: integer
+          minimum: 0
+        max_replicas:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [pending, provisioning, ready, failed, unknown]
+        endpoint_url:
+          type: string
+          format: uri
+
+    CreateDeploymentRequest:
+      type: object
+      required: [name, model_uri]
+      properties:
+        name:
+          type: string
+        model_uri:
+          type: string
+        runtime:
+          type: string
+        resources:
+          $ref: "#/components/schemas/ResourceRequirements"
+        min_replicas:
+          type: integer
+          minimum: 0
+          default: 1
+        max_replicas:
+          type: integer
+          minimum: 1
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+
+    UpdateDeploymentRequest:
+      type: object
+      properties:
+        model_uri:
+          type: string
+        runtime:
+          type: string
+        resources:
+          $ref: "#/components/schemas/ResourceRequirements"
+        min_replicas:
+          type: integer
+        max_replicas:
+          type: integer
+
+    DeploymentStatus:
+      type: object
+      required: [state]
+      properties:
+        state:
+          type: string
+          enum: [pending, provisioning, ready, failed, unknown]
+        ready_replicas:
+          type: integer
+        total_replicas:
+          type: integer
+        conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+        endpoint_url:
+          type: string
+          format: uri
+
+    DeploymentList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Deployment"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    Condition:
+      type: object
+      required: [type, status]
+      properties:
+        type:
+          type: string
+        status:
+          type: string
+          enum: ["True", "False", "Unknown"]
+        reason:
+          type: string
+        message:
+          type: string
+        last_transition:
+          type: string
+          format: date-time
+
+    # -- Capability 4: Training ------------------------------------------------
+    TrainingJob:
+      type: object
+      required: [metadata, status]
+      properties:
+        metadata:
+          $ref: "#/components/schemas/ResourceMetadata"
+        model:
+          type: string
+          description: Base model identifier
+        dataset:
+          type: string
+          description: Training dataset reference
+        runtime:
+          type: string
+          description: Training runtime to use
+        resources:
+          $ref: "#/components/schemas/ResourceRequirements"
+        hyperparameters:
+          type: object
+          additionalProperties:
+            type: string
+        status:
+          type: string
+          enum: [pending, running, succeeded, failed, cancelled]
+        start_time:
+          type: string
+          format: date-time
+        completion_time:
+          type: string
+          format: date-time
+        worker_count:
+          type: integer
+
+    CreateTrainingJobRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        model:
+          type: string
+        dataset:
+          type: string
+        runtime:
+          type: string
+        resources:
+          $ref: "#/components/schemas/ResourceRequirements"
+        hyperparameters:
+          type: object
+          additionalProperties:
+            type: string
+        worker_count:
+          type: integer
+          minimum: 1
+          default: 1
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+
+    TrainingJobList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrainingJob"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    TrainingRuntime:
+      type: object
+      required: [metadata]
+      properties:
+        metadata:
+          $ref: "#/components/schemas/ResourceMetadata"
+        description:
+          type: string
+        framework:
+          type: string
+          description: "ML framework (e.g. 'pytorch', 'tensorflow')"
+        scope:
+          type: string
+          enum: [cluster, workspace]
+
+    TrainingRuntimeList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrainingRuntime"
+
+    LogStream:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              message:
+                type: string
+              source:
+                type: string
+
+    # -- Capability 5: Pipelines -----------------------------------------------
+    PipelineServer:
+      type: object
+      required: [metadata, status]
+      properties:
+        metadata:
+          $ref: "#/components/schemas/ResourceMetadata"
+        config:
+          type: object
+          properties:
+            object_store:
+              type: string
+              description: Object store connection for artifacts
+            database:
+              type: string
+              description: Metadata database connection
+        status:
+          type: string
+          enum: [provisioning, ready, failed, unknown]
+
+    CreatePipelineServerRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        config:
+          type: object
+          properties:
+            object_store:
+              type: string
+            database:
+              type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+
+    PipelineServerStatus:
+      type: object
+      required: [state]
+      properties:
+        state:
+          type: string
+          enum: [provisioning, ready, failed, unknown]
+        conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Condition"
+
+    PipelineServerList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PipelineServer"
+
+    # -- Capability 6: Storage -------------------------------------------------
+    StorageVolume:
+      type: object
+      required: [metadata, size, status]
+      properties:
+        metadata:
+          $ref: "#/components/schemas/ResourceMetadata"
+        size:
+          type: string
+          description: "Storage capacity (e.g. '10Gi')"
+        storage_class:
+          type: string
+        access_mode:
+          type: string
+          enum: [read_write_once, read_write_many, read_only_many]
+        status:
+          type: string
+          enum: [pending, bound, released, failed]
+
+    CreateStorageRequest:
+      type: object
+      required: [name, size]
+      properties:
+        name:
+          type: string
+        size:
+          type: string
+        storage_class:
+          type: string
+        access_mode:
+          type: string
+          enum: [read_write_once, read_write_many, read_only_many]
+          default: read_write_once
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+
+    StorageVolumeList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StorageVolume"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    Connection:
+      type: object
+      required: [metadata, type]
+      properties:
+        metadata:
+          $ref: "#/components/schemas/ResourceMetadata"
+        type:
+          type: string
+          description: "Connection type (e.g. 's3', 'database', 'registry')"
+        credentials:
+          type: object
+          additionalProperties:
+            type: string
+          description: Credential key-value pairs (sensitive values redacted in GET responses)
+
+    CreateConnectionRequest:
+      type: object
+      required: [name, type, credentials]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        credentials:
+          type: object
+          additionalProperties:
+            type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+
+    ConnectionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Connection"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # -- Capability 7: Cluster Resources ---------------------------------------
+    ComputeNode:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+        hostname:
+          type: string
+        status:
+          type: string
+          enum: [ready, not_ready, unknown]
+        capacity:
+          $ref: "#/components/schemas/ResourceRequirements"
+        allocatable:
+          $ref: "#/components/schemas/ResourceRequirements"
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        accelerators:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              count:
+                type: integer
+
+    ComputeNodeList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ComputeNode"
+
+    ClusterSummary:
+      type: object
+      properties:
+        total_nodes:
+          type: integer
+        ready_nodes:
+          type: integer
+        total_capacity:
+          $ref: "#/components/schemas/ResourceRequirements"
+        total_allocatable:
+          $ref: "#/components/schemas/ResourceRequirements"
+        accelerator_summary:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              total:
+                type: integer
+              available:
+                type: integer
+
+    AcceleratorProfile:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        identifier:
+          type: string
+          description: Resource identifier used in scheduling
+        enabled:
+          type: boolean
+
+    AcceleratorProfileList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AcceleratorProfile"
+
+    StorageClass:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        provisioner:
+          type: string
+        is_default:
+          type: boolean
+        volume_binding_mode:
+          type: string
+
+    StorageClassList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StorageClass"

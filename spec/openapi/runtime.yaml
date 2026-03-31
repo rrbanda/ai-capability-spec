@@ -1,0 +1,1608 @@
+openapi: 3.1.0
+info:
+  title: Unified AI Capability Spec - Runtime Layer
+  version: 0.1.0
+  description: |
+    Vendor-neutral API surface for AI runtime and agentic capabilities (8-15).
+    These paths are the spec's own neutral interface -- they are NOT copied from
+    OpenAI, Anthropic, Llama Stack, or any other vendor. Providers translate
+    to/from their native APIs internally.
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: "{baseUrl}"
+    description: Provider-supplied base URL
+    variables:
+      baseUrl:
+        default: http://localhost:8080
+
+tags:
+  - name: inference
+    description: "Capability 8: Inference"
+  - name: agents
+    description: "Capability 9: Agentic Runtime"
+  - name: safety
+    description: "Capability 10: Safety and Guardrails"
+  - name: knowledge
+    description: "Capability 11: Knowledge / RAG"
+  - name: evaluation
+    description: "Capability 12: Evaluation"
+  - name: datasets
+    description: "Capability 13: Datasets"
+  - name: prompts
+    description: "Capability 14: Prompt Management"
+  - name: files
+    description: "Capability 15: File Management"
+
+paths:
+  # ---------------------------------------------------------------------------
+  # Capability 8: Inference
+  # ---------------------------------------------------------------------------
+  /capabilities/inference/chat-completion:
+    post:
+      operationId: chat_completion
+      tags: [inference]
+      summary: Multi-turn chat generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatCompletionRequest"
+      responses:
+        "200":
+          description: Completion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompletionResult"
+
+  /capabilities/inference/completion:
+    post:
+      operationId: completion
+      tags: [inference]
+      summary: Single-prompt text generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompletionRequest"
+      responses:
+        "200":
+          description: Completion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompletionResult"
+
+  /capabilities/inference/embeddings:
+    post:
+      operationId: embeddings
+      tags: [inference]
+      summary: Generate vector embeddings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmbeddingsRequest"
+      responses:
+        "200":
+          description: Embeddings result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmbeddingsResult"
+
+  /capabilities/inference/rerank:
+    post:
+      operationId: rerank
+      tags: [inference]
+      summary: Rerank documents by relevance to a query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RerankRequest"
+      responses:
+        "200":
+          description: Reranked results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RerankResult"
+
+  # ---------------------------------------------------------------------------
+  # Capability 9: Agentic Runtime
+  # ---------------------------------------------------------------------------
+  /capabilities/agents/sessions:
+    post:
+      operationId: create_session
+      tags: [agents]
+      summary: Start a new agent session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+    get:
+      operationId: list_sessions
+      tags: [agents]
+      summary: List active sessions
+      parameters:
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Session list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionList"
+
+  /capabilities/agents/sessions/{session_id}:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      operationId: get_session
+      tags: [agents]
+      summary: Retrieve session state
+      responses:
+        "200":
+          description: Session details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: delete_session
+      tags: [agents]
+      summary: End and clean up a session
+      responses:
+        "204":
+          description: Session deleted
+
+  /capabilities/agents/sessions/{session_id}/turns:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    post:
+      operationId: create_agent_turn
+      tags: [agents]
+      summary: Execute one agent turn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAgentTurnRequest"
+      responses:
+        "200":
+          description: Agent turn result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentTurnResult"
+
+  # ---------------------------------------------------------------------------
+  # Capability 10: Safety and Guardrails
+  # ---------------------------------------------------------------------------
+  /capabilities/safety/moderate:
+    post:
+      operationId: moderate
+      tags: [safety]
+      summary: Check content against safety policies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerationRequest"
+      responses:
+        "200":
+          description: Moderation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationResult"
+
+  /capabilities/safety/shields:
+    get:
+      operationId: list_shields
+      tags: [safety]
+      summary: List available safety shields
+      responses:
+        "200":
+          description: Shield list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShieldList"
+    post:
+      operationId: create_shield
+      tags: [safety]
+      summary: Register a safety shield
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateShieldRequest"
+      responses:
+        "201":
+          description: Shield created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shield"
+
+  /capabilities/safety/shields/{shield_id}:
+    parameters:
+      - $ref: "#/components/parameters/ShieldId"
+    get:
+      operationId: get_shield
+      tags: [safety]
+      summary: Retrieve shield details
+      responses:
+        "200":
+          description: Shield details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shield"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------------------------------------------------------------------
+  # Capability 11: Knowledge / RAG
+  # ---------------------------------------------------------------------------
+  /capabilities/knowledge/vector-stores:
+    get:
+      operationId: list_vector_stores
+      tags: [knowledge]
+      summary: List vector stores
+      parameters:
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Vector store list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VectorStoreList"
+    post:
+      operationId: create_vector_store
+      tags: [knowledge]
+      summary: Create a vector store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVectorStoreRequest"
+      responses:
+        "201":
+          description: Vector store created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VectorStore"
+
+  /capabilities/knowledge/vector-stores/{store_id}:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+    get:
+      operationId: get_vector_store
+      tags: [knowledge]
+      summary: Retrieve vector store details
+      responses:
+        "200":
+          description: Vector store details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VectorStore"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: delete_vector_store
+      tags: [knowledge]
+      summary: Remove a vector store
+      responses:
+        "204":
+          description: Vector store deleted
+
+  /capabilities/knowledge/vector-stores/{store_id}/documents:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+    post:
+      operationId: insert_documents
+      tags: [knowledge]
+      summary: Add documents to a vector store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InsertDocumentsRequest"
+      responses:
+        "200":
+          description: Insert result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InsertResult"
+
+  /capabilities/knowledge/vector-stores/{store_id}/query:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+    post:
+      operationId: query_documents
+      tags: [knowledge]
+      summary: Semantic search over a vector store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueryDocumentsRequest"
+      responses:
+        "200":
+          description: Query results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryResult"
+
+  # ---------------------------------------------------------------------------
+  # Capability 12: Evaluation
+  # ---------------------------------------------------------------------------
+  /capabilities/evaluation/jobs:
+    get:
+      operationId: list_eval_jobs
+      tags: [evaluation]
+      summary: List evaluation jobs
+      parameters:
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Eval job list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvalJobList"
+    post:
+      operationId: create_eval_job
+      tags: [evaluation]
+      summary: Run an evaluation benchmark
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEvalJobRequest"
+      responses:
+        "201":
+          description: Eval job created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvalJob"
+
+  /capabilities/evaluation/jobs/{job_id}:
+    parameters:
+      - $ref: "#/components/parameters/EvalJobId"
+    get:
+      operationId: get_eval_job
+      tags: [evaluation]
+      summary: Retrieve job results
+      responses:
+        "200":
+          description: Eval job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvalJob"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /capabilities/evaluation/scoring-functions:
+    get:
+      operationId: list_scoring_functions
+      tags: [evaluation]
+      summary: List available scoring functions
+      responses:
+        "200":
+          description: Scoring function list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoringFunctionList"
+
+  /capabilities/evaluation/score:
+    post:
+      operationId: score
+      tags: [evaluation]
+      summary: Run a scoring function on data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreRequest"
+      responses:
+        "200":
+          description: Score result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoreResult"
+
+  # ---------------------------------------------------------------------------
+  # Capability 13: Datasets
+  # ---------------------------------------------------------------------------
+  /capabilities/datasets:
+    get:
+      operationId: list_datasets
+      tags: [datasets]
+      summary: List registered datasets
+      parameters:
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Dataset list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetList"
+    post:
+      operationId: register_dataset
+      tags: [datasets]
+      summary: Register a dataset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterDatasetRequest"
+      responses:
+        "201":
+          description: Dataset registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataset"
+
+  /capabilities/datasets/{dataset_id}:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    get:
+      operationId: get_dataset
+      tags: [datasets]
+      summary: Retrieve dataset metadata
+      responses:
+        "200":
+          description: Dataset details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataset"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: delete_dataset
+      tags: [datasets]
+      summary: Unregister a dataset
+      responses:
+        "204":
+          description: Dataset deleted
+
+  /capabilities/datasets/{dataset_id}/rows:
+    parameters:
+      - $ref: "#/components/parameters/DatasetId"
+    get:
+      operationId: iterate_rows
+      tags: [datasets]
+      summary: Iterate over dataset rows
+      parameters:
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Dataset rows
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetRowList"
+
+  # ---------------------------------------------------------------------------
+  # Capability 14: Prompt Management
+  # ---------------------------------------------------------------------------
+  /capabilities/prompts:
+    get:
+      operationId: list_prompts
+      tags: [prompts]
+      summary: List prompt templates
+      parameters:
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Prompt list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromptList"
+    post:
+      operationId: create_prompt
+      tags: [prompts]
+      summary: Create a prompt template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePromptRequest"
+      responses:
+        "201":
+          description: Prompt created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prompt"
+
+  /capabilities/prompts/{prompt_id}:
+    parameters:
+      - $ref: "#/components/parameters/PromptId"
+    get:
+      operationId: get_prompt
+      tags: [prompts]
+      summary: Retrieve a prompt
+      responses:
+        "200":
+          description: Prompt details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prompt"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: update_prompt
+      tags: [prompts]
+      summary: Update a prompt template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePromptRequest"
+      responses:
+        "200":
+          description: Prompt updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prompt"
+    delete:
+      operationId: delete_prompt
+      tags: [prompts]
+      summary: Remove a prompt template
+      responses:
+        "204":
+          description: Prompt deleted
+
+  /capabilities/prompts/{prompt_id}/render:
+    parameters:
+      - $ref: "#/components/parameters/PromptId"
+    post:
+      operationId: render_prompt
+      tags: [prompts]
+      summary: Render a prompt with variable values
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenderPromptRequest"
+      responses:
+        "200":
+          description: Rendered prompt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RenderedPrompt"
+
+  # ---------------------------------------------------------------------------
+  # Capability 15: File Management
+  # ---------------------------------------------------------------------------
+  /capabilities/files:
+    get:
+      operationId: list_files
+      tags: [files]
+      summary: List uploaded files
+      parameters:
+        - name: purpose
+          in: query
+          schema:
+            type: string
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: File list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileList"
+    post:
+      operationId: upload_file
+      tags: [files]
+      summary: Upload a file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                filename:
+                  type: string
+                purpose:
+                  type: string
+      responses:
+        "201":
+          description: File uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+
+  /capabilities/files/{file_id}:
+    parameters:
+      - $ref: "#/components/parameters/FileId"
+    get:
+      operationId: get_file
+      tags: [files]
+      summary: Retrieve file metadata
+      responses:
+        "200":
+          description: File details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/File"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: delete_file
+      tags: [files]
+      summary: Remove a file
+      responses:
+        "204":
+          description: File deleted
+
+  /capabilities/files/{file_id}/content:
+    parameters:
+      - $ref: "#/components/parameters/FileId"
+    get:
+      operationId: get_file_content
+      tags: [files]
+      summary: Download file content
+      responses:
+        "200":
+          description: File content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+# =============================================================================
+# Components
+# =============================================================================
+components:
+  # ---------------------------------------------------------------------------
+  # Parameters
+  # ---------------------------------------------------------------------------
+  parameters:
+    SessionId:
+      name: session_id
+      in: path
+      required: true
+      schema:
+        type: string
+    ShieldId:
+      name: shield_id
+      in: path
+      required: true
+      schema:
+        type: string
+    StoreId:
+      name: store_id
+      in: path
+      required: true
+      schema:
+        type: string
+    EvalJobId:
+      name: job_id
+      in: path
+      required: true
+      schema:
+        type: string
+    DatasetId:
+      name: dataset_id
+      in: path
+      required: true
+      schema:
+        type: string
+    PromptId:
+      name: prompt_id
+      in: path
+      required: true
+      schema:
+        type: string
+    FileId:
+      name: file_id
+      in: path
+      required: true
+      schema:
+        type: string
+    PageToken:
+      name: page_token
+      in: query
+      description: Continuation token for pagination
+      schema:
+        type: string
+    PageSize:
+      name: page_size
+      in: query
+      description: Maximum number of results to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 100
+
+  # ---------------------------------------------------------------------------
+  # Responses
+  # ---------------------------------------------------------------------------
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  # ---------------------------------------------------------------------------
+  # Schemas
+  # ---------------------------------------------------------------------------
+  schemas:
+    # -- Common ----------------------------------------------------------------
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+    Pagination:
+      type: object
+      properties:
+        next_page_token:
+          type: string
+        total_count:
+          type: integer
+
+    # -- Capability 8: Inference -----------------------------------------------
+    Message:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [user, assistant, system, tool]
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                $ref: "#/components/schemas/ContentPart"
+        tool_call_id:
+          type: string
+          description: For role=tool, the ID of the tool call this responds to
+        tool_calls:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolCall"
+
+    ContentPart:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [text, image]
+        text:
+          type: string
+        image_url:
+          type: string
+          format: uri
+
+    ToolCall:
+      type: object
+      required: [id, function]
+      properties:
+        id:
+          type: string
+        function:
+          type: object
+          required: [name, arguments]
+          properties:
+            name:
+              type: string
+            arguments:
+              type: string
+              description: JSON-encoded arguments
+
+    ToolDefinition:
+      type: object
+      required: [name, description]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        parameters:
+          type: object
+          description: JSON Schema of the tool's parameters
+
+    TokenUsage:
+      type: object
+      properties:
+        prompt_tokens:
+          type: integer
+        completion_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+
+    ChatCompletionRequest:
+      type: object
+      required: [model, messages]
+      properties:
+        model:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+        max_tokens:
+          type: integer
+          minimum: 1
+        top_p:
+          type: number
+        tools:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolDefinition"
+        stream:
+          type: boolean
+          default: false
+
+    CompletionRequest:
+      type: object
+      required: [model, prompt]
+      properties:
+        model:
+          type: string
+        prompt:
+          type: string
+        temperature:
+          type: number
+        max_tokens:
+          type: integer
+        top_p:
+          type: number
+        stream:
+          type: boolean
+          default: false
+
+    CompletionResult:
+      type: object
+      required: [message, finish_reason]
+      properties:
+        id:
+          type: string
+        message:
+          $ref: "#/components/schemas/Message"
+        finish_reason:
+          type: string
+          enum: [stop, tool_use, length, content_filter]
+        usage:
+          $ref: "#/components/schemas/TokenUsage"
+
+    EmbeddingsRequest:
+      type: object
+      required: [model, inputs]
+      properties:
+        model:
+          type: string
+        inputs:
+          type: array
+          items:
+            type: string
+
+    EmbeddingsResult:
+      type: object
+      required: [embeddings]
+      properties:
+        embeddings:
+          type: array
+          items:
+            type: object
+            required: [index, values]
+            properties:
+              index:
+                type: integer
+              values:
+                type: array
+                items:
+                  type: number
+        model:
+          type: string
+        usage:
+          $ref: "#/components/schemas/TokenUsage"
+
+    RerankRequest:
+      type: object
+      required: [model, query, documents]
+      properties:
+        model:
+          type: string
+        query:
+          type: string
+        documents:
+          type: array
+          items:
+            type: string
+        top_k:
+          type: integer
+
+    RerankResult:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required: [index, relevance_score]
+            properties:
+              index:
+                type: integer
+              relevance_score:
+                type: number
+              document:
+                type: string
+
+    # -- Capability 9: Agentic Runtime -----------------------------------------
+    AgentConfig:
+      type: object
+      properties:
+        model:
+          type: string
+        instructions:
+          type: string
+        tools:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolDefinition"
+        temperature:
+          type: number
+        max_turns:
+          type: integer
+
+    Session:
+      type: object
+      required: [id, created_at]
+      properties:
+        id:
+          type: string
+        agent_config:
+          $ref: "#/components/schemas/AgentConfig"
+        turns:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentTurnResult"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateSessionRequest:
+      type: object
+      properties:
+        agent_config:
+          $ref: "#/components/schemas/AgentConfig"
+
+    SessionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Session"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    CreateAgentTurnRequest:
+      type: object
+      required: [messages]
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+        stream:
+          type: boolean
+          default: false
+
+    AgentTurnResult:
+      type: object
+      required: [turn_id, status, output]
+      properties:
+        turn_id:
+          type: string
+        status:
+          type: string
+          enum: [completed, requires_action, failed]
+        output:
+          $ref: "#/components/schemas/Message"
+        tool_calls:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolCall"
+        usage:
+          $ref: "#/components/schemas/TokenUsage"
+
+    # -- Capability 10: Safety and Guardrails ----------------------------------
+    ModerationRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                $ref: "#/components/schemas/Message"
+        shields:
+          type: array
+          items:
+            type: string
+          description: Shield IDs to check against (all if omitted)
+
+    ModerationResult:
+      type: object
+      required: [flagged]
+      properties:
+        flagged:
+          type: boolean
+        categories:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Category-level flags
+        scores:
+          type: object
+          additionalProperties:
+            type: number
+          description: Category-level confidence scores
+        shield_results:
+          type: array
+          items:
+            type: object
+            properties:
+              shield_id:
+                type: string
+              flagged:
+                type: boolean
+              violation:
+                type: string
+
+    Shield:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        provider:
+          type: string
+
+    CreateShieldRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        config:
+          type: object
+
+    ShieldList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Shield"
+
+    # -- Capability 11: Knowledge / RAG ----------------------------------------
+    VectorStore:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        embedding_model:
+          type: string
+        dimensions:
+          type: integer
+        document_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    CreateVectorStoreRequest:
+      type: object
+      required: [name, embedding_model]
+      properties:
+        name:
+          type: string
+        embedding_model:
+          type: string
+        dimensions:
+          type: integer
+        config:
+          type: object
+
+    VectorStoreList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/VectorStore"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    InsertDocumentsRequest:
+      type: object
+      required: [documents]
+      properties:
+        documents:
+          type: array
+          items:
+            type: object
+            required: [content]
+            properties:
+              id:
+                type: string
+              content:
+                type: string
+              metadata:
+                type: object
+        chunking:
+          type: object
+          properties:
+            strategy:
+              type: string
+              enum: [fixed_size, sentence, paragraph]
+            chunk_size:
+              type: integer
+            overlap:
+              type: integer
+
+    InsertResult:
+      type: object
+      properties:
+        inserted_count:
+          type: integer
+        chunk_count:
+          type: integer
+
+    QueryDocumentsRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+        top_k:
+          type: integer
+          default: 10
+        filters:
+          type: object
+
+    QueryResult:
+      type: object
+      required: [chunks]
+      properties:
+        chunks:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentChunk"
+
+    DocumentChunk:
+      type: object
+      required: [content, score]
+      properties:
+        id:
+          type: string
+        document_id:
+          type: string
+        content:
+          type: string
+        score:
+          type: number
+        metadata:
+          type: object
+
+    # -- Capability 12: Evaluation ---------------------------------------------
+    EvalJob:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+        model:
+          type: string
+        dataset_id:
+          type: string
+        scoring_functions:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        results:
+          type: object
+          additionalProperties:
+            type: number
+          description: Scoring function ID to score mapping
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    CreateEvalJobRequest:
+      type: object
+      required: [model, dataset_id, scoring_functions]
+      properties:
+        model:
+          type: string
+        dataset_id:
+          type: string
+        scoring_functions:
+          type: array
+          items:
+            type: string
+
+    EvalJobList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvalJob"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    ScoringFunction:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        return_type:
+          type: string
+          enum: [numeric, boolean, categorical]
+
+    ScoringFunctionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScoringFunction"
+
+    ScoreRequest:
+      type: object
+      required: [scoring_function_id, inputs]
+      properties:
+        scoring_function_id:
+          type: string
+        inputs:
+          type: array
+          items:
+            type: object
+            description: Key-value data to score
+
+    ScoreResult:
+      type: object
+      required: [scores]
+      properties:
+        scores:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                oneOf:
+                  - type: number
+                  - type: boolean
+                  - type: string
+              metadata:
+                type: object
+
+    # -- Capability 13: Datasets -----------------------------------------------
+    Dataset:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        source:
+          type: object
+          required: [type]
+          properties:
+            type:
+              type: string
+              enum: [uri, inline, file]
+            uri:
+              type: string
+        schema:
+          type: object
+          description: JSON Schema describing the row format
+        row_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    RegisterDatasetRequest:
+      type: object
+      required: [name, source]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        source:
+          type: object
+          required: [type]
+          properties:
+            type:
+              type: string
+              enum: [uri, inline, file]
+            uri:
+              type: string
+        schema:
+          type: object
+
+    DatasetList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Dataset"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    DatasetRowList:
+      type: object
+      required: [rows]
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # -- Capability 14: Prompt Management --------------------------------------
+    Prompt:
+      type: object
+      required: [id, name, template]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        template:
+          type: string
+          description: Template string with {{variable}} placeholders
+        variables:
+          type: array
+          items:
+            type: object
+            required: [name]
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              default:
+                type: string
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreatePromptRequest:
+      type: object
+      required: [name, template]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        template:
+          type: string
+        variables:
+          type: array
+          items:
+            type: object
+            required: [name]
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              default:
+                type: string
+
+    UpdatePromptRequest:
+      type: object
+      properties:
+        template:
+          type: string
+        description:
+          type: string
+        variables:
+          type: array
+          items:
+            type: object
+            required: [name]
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              default:
+                type: string
+
+    PromptList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Prompt"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    RenderedPrompt:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+          description: If template produces multi-message output
+
+    RenderPromptRequest:
+      type: object
+      required: [variables]
+      properties:
+        variables:
+          type: object
+          additionalProperties:
+            type: string
+
+    # -- Capability 15: File Management ----------------------------------------
+    File:
+      type: object
+      required: [id, filename, size_bytes]
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        purpose:
+          type: string
+        size_bytes:
+          type: integer
+        mime_type:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    FileList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/File"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
