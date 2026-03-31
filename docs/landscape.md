@@ -1,7 +1,7 @@
-# AI Platform Landscape
+# AI Interop -- Landscape
 
 This document maps the current AI platform landscape and explains where the
-Unified AI Capability Spec fits. Every project listed here is treated as an
+AI Interop project fits. Every project listed here is treated as an
 **equal potential provider** -- none is privileged or prescribed by the spec.
 
 ---
@@ -54,7 +54,7 @@ must fulfill -- independent of any single vendor's wire format.
                               ▲
                               │
                     ┌─────────┴──────────┐
-                    │  This Spec defines │
+                    │  AI Interop defines │
                     │  abstract contracts │
                     │  for ALL of the     │
                     │  above capabilities │
@@ -201,7 +201,7 @@ must fulfill -- independent of any single vendor's wire format.
 
 ---
 
-## Where This Spec Fits
+## Where AI Interop Fits
 
 This spec does **not** compete with any of the projects listed above. Instead,
 it defines a **neutral abstraction layer** that sits between AI agents/applications
@@ -255,7 +255,7 @@ and the backends they use:
 
 ## Comparison Matrix
 
-| Aspect | OpenAI | Anthropic | Llama Stack | RHOAI | Kubeflow | SageMaker | This Spec |
+| Aspect | OpenAI | Anthropic | Llama Stack | RHOAI | Kubeflow | SageMaker | AI Interop |
 |---|---|---|---|---|---|---|---|
 | Vendor neutral | No | No | Partial | No | Yes | No | **Yes** |
 | Platform infra | No | No | No | Yes | Yes | Yes | **Yes** |

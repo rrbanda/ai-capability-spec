@@ -1,6 +1,6 @@
 # Governance
 
-This document describes the governance model for the Unified AI Capability Spec.
+This document describes the governance model for AI Interop.
 
 ## Roles
 

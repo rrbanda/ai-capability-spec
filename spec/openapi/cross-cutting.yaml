@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Unified AI Capability Spec - Cross-Cutting Layer
+  title: AI Interop - Cross-Cutting Layer
   version: 0.1.0
   description: |
     Vendor-neutral API surface for cross-cutting capabilities (16-18) that

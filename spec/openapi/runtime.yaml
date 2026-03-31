@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Unified AI Capability Spec - Runtime Layer
+  title: AI Interop - Runtime Layer
   version: 0.1.0
   description: |
     Vendor-neutral API surface for AI runtime and agentic capabilities (8-15).

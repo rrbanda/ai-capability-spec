@@ -1,4 +1,4 @@
-# Contributing to the Unified AI Capability Spec
+# Contributing to AI Interop
 
 Thank you for your interest in contributing. This document provides guidelines
 for contributing to the project.
@@ -62,8 +62,8 @@ When changing `spec/models/`:
 
 ```bash
 # Clone the repository
-git clone https://github.com/rrbanda/ai-capability-spec.git
-cd ai-capability-spec
+git clone https://github.com/rrbanda/ai-interop.git
+cd ai-interop
 
 # Install dependencies (for validation and testing)
 pip install pydantic pyyaml

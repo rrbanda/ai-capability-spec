@@ -1,4 +1,4 @@
-# Unified AI Capability Spec
+# AI Interop
 
 A vendor-neutral specification defining abstract capability contracts for the
 full AI stack -- from platform infrastructure through agentic runtime.

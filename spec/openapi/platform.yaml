@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Unified AI Capability Spec - Platform Layer
+  title: AI Interop - Platform Layer
   version: 0.1.0
   description: |
     Vendor-neutral API surface for AI platform infrastructure capabilities
